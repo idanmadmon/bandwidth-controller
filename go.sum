@@ -1,0 +1,4 @@
+github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
+github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
+github.com/idanmadmon/rate-limited-reader v0.0.0-20241215210602-8eb05b441409 h1:53WIVCNeDujYRBoaVI8l5R4wUpv9R1W1qj02zrr4jio=
+github.com/idanmadmon/rate-limited-reader v0.0.0-20241215210602-8eb05b441409/go.mod h1:w4IYscN7SvQhQkvtnrNWbvfyOCjkU06ETEDxY9/fSaw=
