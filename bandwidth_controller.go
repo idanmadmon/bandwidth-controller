@@ -20,7 +20,7 @@ func NewBandwidthController(bandwidth int64) *BandwidthController {
 	}
 }
 
-func (bc *BandwidthController) GetFileReader(r io.Reader, fileSize int64) *FileReader {
+func (bc *BandwidthController) AppendFileReader(r io.Reader, fileSize int64) *File {
 	fileID := uuid.New()
 	fileReader := NewFileReader(r, bc.bandwidth, func() {
 		bc.removeFile(fileID)
@@ -33,7 +33,7 @@ func (bc *BandwidthController) GetFileReader(r io.Reader, fileSize int64) *FileR
 	bc.updateLimits()
 	bc.mu.Unlock()
 
-	return fileReader
+	return file
 }
 
 func (bc *BandwidthController) removeFile(fileID uuid.UUID) {
@@ -58,6 +58,6 @@ func (bc *BandwidthController) updateLimits() {
 	for id, weight := range weights {
 		ratio := weight / totalWeight
 		newLimit := int64(float64(bc.bandwidth) * ratio)
-		bc.files[id].Reader.UpdateLimit(newLimit)
+		bc.files[id].Reader.UpdateRateLimit(newLimit)
 	}
 }

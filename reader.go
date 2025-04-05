@@ -10,6 +10,7 @@ import (
 type FileReader struct {
 	reader    *ratelimitedreader.RateLimitedReader
 	bytesRead int64
+	rateLimit int64
 	callback  func() // called on Close
 }
 
@@ -34,8 +35,13 @@ func (fr *FileReader) Close() error {
 	return nil
 }
 
-func (fr *FileReader) UpdateLimit(newLimit int64) {
+func (fr *FileReader) UpdateRateLimit(newLimit int64) {
+	atomic.StoreInt64(&fr.rateLimit, newLimit)
 	fr.reader.UpdateLimit(newLimit)
+}
+
+func (fr *FileReader) GetRateLimit() int64 {
+	return atomic.LoadInt64(&fr.rateLimit)
 }
 
 func (fr *FileReader) BytesRead() int64 {
