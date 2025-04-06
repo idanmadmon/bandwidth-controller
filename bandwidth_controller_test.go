@@ -49,28 +49,63 @@ func TestBandwidthController_RateLimit(t *testing.T) {
 	assertReadTimes(t, time.Since(start), partsAmount, partsAmount+1)
 }
 
-func TestBandwidthController_SmartBandwithControl(t *testing.T) {
+func TestBandwidthController_MaxFileBandwidth(t *testing.T) {
+	smallDataSize := 1_000       // 1 KB of data
+	largeDataSize := 300_000_000 // 300 MB of data
+	bandwidth := (smallDataSize * 2) + largeDataSize
+
+	bandwidthContorller := NewBandwidthController(int64(bandwidth))
+
+	smallFile1 := bandwidthContorller.AppendFileReader(strings.NewReader(strings.Repeat("A", smallDataSize)), int64(smallDataSize))
+	if int(smallFile1.Reader.GetRateLimit()) != smallDataSize {
+		t.Fatalf("smallFile1 appointed bandwidth bigger then file size bandwidth: %d expected: %d", smallFile1.Reader.GetRateLimit(), smallDataSize)
+	}
+
+	smallFile2 := bandwidthContorller.AppendFileReader(strings.NewReader(strings.Repeat("A", smallDataSize)), int64(smallDataSize))
+	if int(smallFile1.Reader.GetRateLimit()) != smallDataSize {
+		t.Fatalf("smallFile1 appointed bandwidth bigger then file size bandwidth: %d expected: %d", smallFile1.Reader.GetRateLimit(), smallDataSize)
+	}
+
+	if int(smallFile2.Reader.GetRateLimit()) != smallDataSize {
+		t.Fatalf("smallFile2 appointed bandwidth bigger then file size bandwidth: %d expected: %d", smallFile2.Reader.GetRateLimit(), smallDataSize)
+	}
+
+	largeFile1 := bandwidthContorller.AppendFileReader(strings.NewReader(strings.Repeat("A", largeDataSize)), int64(largeDataSize))
+	if int(smallFile1.Reader.GetRateLimit()) != smallDataSize {
+		t.Fatalf("smallFile1 appointed bandwidth bigger then file size bandwidth: %d expected: %d", smallFile1.Reader.GetRateLimit(), smallDataSize)
+	}
+
+	if int(smallFile2.Reader.GetRateLimit()) != smallDataSize {
+		t.Fatalf("smallFile2 appointed bandwidth bigger then file size bandwidth: %d expected: %d", smallFile2.Reader.GetRateLimit(), smallDataSize)
+	}
+
+	if int(largeFile1.Reader.GetRateLimit()) != largeDataSize {
+		t.Fatalf("largeFile1 appointed bandwidth bigger then file size bandwidth: %d expected: %d", largeFile1.Reader.GetRateLimit(), largeDataSize)
+	}
+}
+
+func TestBandwidthController_FilesBandwidthAllocation(t *testing.T) {
 	smallDataSize := 1_000       // 1 KB of data
 	largeDataSize := 300_000_000 // 300 MB of data
 	partsAmount := 4             // from the large file
 	bandwidth := ((smallDataSize * 2) + largeDataSize) / partsAmount
 
 	bandwidthContorller := NewBandwidthController(int64(bandwidth))
+
 	smallFile1 := bandwidthContorller.AppendFileReader(strings.NewReader(strings.Repeat("A", smallDataSize)), int64(smallDataSize))
 	smallFile2 := bandwidthContorller.AppendFileReader(strings.NewReader(strings.Repeat("A", smallDataSize)), int64(smallDataSize))
 	largeFile1 := bandwidthContorller.AppendFileReader(strings.NewReader(strings.Repeat("A", largeDataSize)), int64(largeDataSize))
 
-	if int(smallFile1.Reader.GetRateLimit()) == smallDataSize/10 {
-		t.Fatalf("yoooo this is not smart bandwith controll on smallFile1 bandwidth: %d expected: %d", smallFile1.Reader.GetRateLimit(), smallDataSize)
+	if int(smallFile1.Reader.GetRateLimit()) != smallDataSize {
+		t.Fatalf("smallFile1 appointed bandwidth bigger then file size bandwidth: %d expected: %d", smallFile1.Reader.GetRateLimit(), smallDataSize)
 	}
 
-	if int(smallFile2.Reader.GetRateLimit()) == smallDataSize/10 {
-		t.Fatalf("yoooo this is not smart bandwith controll on smallFile2 bandwidth: %d expected: %d", smallFile2.Reader.GetRateLimit(), smallDataSize)
+	if int(smallFile2.Reader.GetRateLimit()) != smallDataSize {
+		t.Fatalf("smallFile2 appointed bandwidth bigger then file size bandwidth: %d expected: %d", smallFile2.Reader.GetRateLimit(), smallDataSize)
 	}
 
-	if int(largeFile1.Reader.GetRateLimit()) == largeDataSize/10 {
-		// TODO: delete
-		t.Fatalf("yoooooo largeFile1 bandwidth: %d expected: %d", largeFile1.Reader.GetRateLimit(), largeDataSize/10)
+	if int(largeFile1.Reader.GetRateLimit()) != bandwidth-(smallDataSize*2) {
+		t.Fatalf("largeFile1 appointed bandwidth bigger then file size bandwidth: %d expected: %d", largeFile1.Reader.GetRateLimit(), largeDataSize)
 	}
 }
 

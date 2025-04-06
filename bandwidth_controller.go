@@ -55,9 +55,15 @@ func (bc *BandwidthController) updateLimits() {
 		}
 	}
 
+	totalBandwidth := bc.bandwidth
 	for id, weight := range weights {
 		ratio := weight / totalWeight
-		newLimit := int64(float64(bc.bandwidth) * ratio)
+		totalWeight -= weight
+		newLimit := int64(float64(totalBandwidth) * ratio)
+		if newLimit > bc.files[id].Size {
+			newLimit = bc.files[id].Size
+		}
+		totalBandwidth -= newLimit
 		bc.files[id].Reader.UpdateRateLimit(newLimit)
 	}
 }
