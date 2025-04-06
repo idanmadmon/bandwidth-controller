@@ -7,6 +7,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 func TestBandwidthController_BasicRead(t *testing.T) {
@@ -58,29 +60,29 @@ func TestBandwidthController_MaxFileBandwidth(t *testing.T) {
 
 	smallFile1 := bandwidthContorller.AppendFileReader(strings.NewReader(strings.Repeat("A", smallDataSize)), int64(smallDataSize))
 	if int(smallFile1.Reader.GetRateLimit()) != smallDataSize {
-		t.Fatalf("smallFile1 appointed bandwidth bigger then file size bandwidth: %d expected: %d", smallFile1.Reader.GetRateLimit(), smallDataSize)
+		t.Fatalf("smallFile1 appointed bandwidth different then file size bandwidth: %d expected: %d", smallFile1.Reader.GetRateLimit(), smallDataSize)
 	}
 
 	smallFile2 := bandwidthContorller.AppendFileReader(strings.NewReader(strings.Repeat("A", smallDataSize)), int64(smallDataSize))
 	if int(smallFile1.Reader.GetRateLimit()) != smallDataSize {
-		t.Fatalf("smallFile1 appointed bandwidth bigger then file size bandwidth: %d expected: %d", smallFile1.Reader.GetRateLimit(), smallDataSize)
+		t.Fatalf("smallFile1 appointed bandwidth different then file size bandwidth: %d expected: %d", smallFile1.Reader.GetRateLimit(), smallDataSize)
 	}
 
 	if int(smallFile2.Reader.GetRateLimit()) != smallDataSize {
-		t.Fatalf("smallFile2 appointed bandwidth bigger then file size bandwidth: %d expected: %d", smallFile2.Reader.GetRateLimit(), smallDataSize)
+		t.Fatalf("smallFile2 appointed bandwidth different then file size bandwidth: %d expected: %d", smallFile2.Reader.GetRateLimit(), smallDataSize)
 	}
 
 	largeFile1 := bandwidthContorller.AppendFileReader(strings.NewReader(strings.Repeat("A", largeDataSize)), int64(largeDataSize))
 	if int(smallFile1.Reader.GetRateLimit()) != smallDataSize {
-		t.Fatalf("smallFile1 appointed bandwidth bigger then file size bandwidth: %d expected: %d", smallFile1.Reader.GetRateLimit(), smallDataSize)
+		t.Fatalf("smallFile1 appointed bandwidth different then file size bandwidth: %d expected: %d", smallFile1.Reader.GetRateLimit(), smallDataSize)
 	}
 
 	if int(smallFile2.Reader.GetRateLimit()) != smallDataSize {
-		t.Fatalf("smallFile2 appointed bandwidth bigger then file size bandwidth: %d expected: %d", smallFile2.Reader.GetRateLimit(), smallDataSize)
+		t.Fatalf("smallFile2 appointed bandwidth different then file size bandwidth: %d expected: %d", smallFile2.Reader.GetRateLimit(), smallDataSize)
 	}
 
 	if int(largeFile1.Reader.GetRateLimit()) != largeDataSize {
-		t.Fatalf("largeFile1 appointed bandwidth bigger then file size bandwidth: %d expected: %d", largeFile1.Reader.GetRateLimit(), largeDataSize)
+		t.Fatalf("largeFile1 appointed bandwidth different then file size bandwidth: %d expected: %d", largeFile1.Reader.GetRateLimit(), largeDataSize)
 	}
 }
 
@@ -90,23 +92,41 @@ func TestBandwidthController_FilesBandwidthAllocation(t *testing.T) {
 	partsAmount := 4             // from the large file
 	bandwidth := ((smallDataSize * 2) + largeDataSize) / partsAmount
 
+	var largeFile1 *File
+	var smallFile1 *File
+	var smallFile2 *File
 	bandwidthContorller := NewBandwidthController(int64(bandwidth))
 
-	smallFile1 := bandwidthContorller.AppendFileReader(strings.NewReader(strings.Repeat("A", smallDataSize)), int64(smallDataSize))
-	smallFile2 := bandwidthContorller.AppendFileReader(strings.NewReader(strings.Repeat("A", smallDataSize)), int64(smallDataSize))
-	largeFile1 := bandwidthContorller.AppendFileReader(strings.NewReader(strings.Repeat("A", largeDataSize)), int64(largeDataSize))
+	assertExpectedResult := func() {
+		if int(smallFile1.Reader.GetRateLimit()) != smallDataSize {
+			t.Fatalf("smallFile1 appointed bandwidth different then file size bandwidth: %d expected: %d", smallFile1.Reader.GetRateLimit(), smallDataSize)
+		}
 
-	if int(smallFile1.Reader.GetRateLimit()) != smallDataSize {
-		t.Fatalf("smallFile1 appointed bandwidth bigger then file size bandwidth: %d expected: %d", smallFile1.Reader.GetRateLimit(), smallDataSize)
+		if int(smallFile2.Reader.GetRateLimit()) != smallDataSize {
+			t.Fatalf("smallFile2 appointed bandwidth different then file size bandwidth: %d expected: %d", smallFile2.Reader.GetRateLimit(), smallDataSize)
+		}
+
+		if int(largeFile1.Reader.GetRateLimit()) != bandwidth-(smallDataSize*2) {
+			t.Fatalf("largeFile1 appointed bandwidth different then expected bandwidth: %d expected: %d", largeFile1.Reader.GetRateLimit(), largeDataSize)
+		}
 	}
 
-	if int(smallFile2.Reader.GetRateLimit()) != smallDataSize {
-		t.Fatalf("smallFile2 appointed bandwidth bigger then file size bandwidth: %d expected: %d", smallFile2.Reader.GetRateLimit(), smallDataSize)
-	}
+	largeFile1 = bandwidthContorller.AppendFileReader(strings.NewReader(strings.Repeat("A", largeDataSize)), int64(largeDataSize))
+	smallFile1 = bandwidthContorller.AppendFileReader(strings.NewReader(strings.Repeat("A", smallDataSize)), int64(smallDataSize))
+	smallFile2 = bandwidthContorller.AppendFileReader(strings.NewReader(strings.Repeat("A", smallDataSize)), int64(smallDataSize))
+	assertExpectedResult()
 
-	if int(largeFile1.Reader.GetRateLimit()) != bandwidth-(smallDataSize*2) {
-		t.Fatalf("largeFile1 appointed bandwidth bigger then file size bandwidth: %d expected: %d", largeFile1.Reader.GetRateLimit(), largeDataSize)
-	}
+	bandwidthContorller.files = make(map[uuid.UUID]*File)
+	smallFile1 = bandwidthContorller.AppendFileReader(strings.NewReader(strings.Repeat("A", smallDataSize)), int64(smallDataSize))
+	smallFile2 = bandwidthContorller.AppendFileReader(strings.NewReader(strings.Repeat("A", smallDataSize)), int64(smallDataSize))
+	largeFile1 = bandwidthContorller.AppendFileReader(strings.NewReader(strings.Repeat("A", largeDataSize)), int64(largeDataSize))
+	assertExpectedResult()
+
+	bandwidthContorller.files = make(map[uuid.UUID]*File)
+	smallFile1 = bandwidthContorller.AppendFileReader(strings.NewReader(strings.Repeat("A", smallDataSize)), int64(smallDataSize))
+	largeFile1 = bandwidthContorller.AppendFileReader(strings.NewReader(strings.Repeat("A", largeDataSize)), int64(largeDataSize))
+	smallFile2 = bandwidthContorller.AppendFileReader(strings.NewReader(strings.Repeat("A", smallDataSize)), int64(smallDataSize))
+	assertExpectedResult()
 }
 
 func readAllFiles(t *testing.T, files []*File, minTimeInSeconds, maxTimeInSeconds int) {

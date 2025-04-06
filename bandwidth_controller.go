@@ -44,26 +44,16 @@ func (bc *BandwidthController) removeFile(fileID uuid.UUID) {
 }
 
 func (bc *BandwidthController) updateLimits() {
-	totalWeight := 0.0
-	weights := make(map[uuid.UUID]float64)
-
-	for id, file := range bc.files {
-		remainingSize := file.Size - file.Reader.BytesRead()
-		if remainingSize > 0 {
-			weights[id] = 1.0 / float64(remainingSize)
-			totalWeight += weights[id]
-		}
-	}
-
+	weights, totalWeight := getFilesSortedWeights(bc.files)
 	totalBandwidth := bc.bandwidth
-	for id, weight := range weights {
-		ratio := weight / totalWeight
-		totalWeight -= weight
+	for _, fileWeightPair := range weights {
+		ratio := fileWeightPair.weight / totalWeight
+		totalWeight -= fileWeightPair.weight
 		newLimit := int64(float64(totalBandwidth) * ratio)
-		if newLimit > bc.files[id].Size {
-			newLimit = bc.files[id].Size
+		if newLimit > bc.files[fileWeightPair.id].Size {
+			newLimit = bc.files[fileWeightPair.id].Size
 		}
 		totalBandwidth -= newLimit
-		bc.files[id].Reader.UpdateRateLimit(newLimit)
+		bc.files[fileWeightPair.id].Reader.UpdateRateLimit(newLimit)
 	}
 }
