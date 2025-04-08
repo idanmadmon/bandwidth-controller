@@ -129,6 +129,40 @@ func TestBandwidthController_FilesBandwidthAllocation(t *testing.T) {
 	assertExpectedResult()
 }
 
+func TestBandwidthController_FilesCloseBandwidthAllocation(t *testing.T) {
+	smallDataSize := 1_000       // 1 KB of data
+	largeDataSize := 300_000_000 // 300 MB of data
+	partsAmount := 4             // from the large file
+	bandwidth := ((smallDataSize * 2) + largeDataSize) / partsAmount
+
+	bandwidthContorller := NewBandwidthController(int64(bandwidth))
+	smallFile1 := bandwidthContorller.AppendFileReader(strings.NewReader(strings.Repeat("A", smallDataSize)), int64(smallDataSize))
+	smallFile2 := bandwidthContorller.AppendFileReader(strings.NewReader(strings.Repeat("A", smallDataSize)), int64(smallDataSize))
+	largeFile1 := bandwidthContorller.AppendFileReader(strings.NewReader(strings.Repeat("A", largeDataSize)), int64(largeDataSize))
+
+	err := smallFile1.Reader.Close()
+	if err != nil {
+		t.Fatalf("got error while closing smallFile1: %v", err)
+	}
+
+	if int(smallFile2.Reader.GetRateLimit()) != smallDataSize {
+		t.Fatalf("smallFile2 appointed bandwidth different then file size bandwidth: %d expected: %d", smallFile2.Reader.GetRateLimit(), smallDataSize)
+	}
+
+	if int(largeFile1.Reader.GetRateLimit()) != bandwidth-smallDataSize {
+		t.Fatalf("largeFile1 appointed bandwidth different then expected bandwidth: %d expected: %d", largeFile1.Reader.GetRateLimit(), largeDataSize)
+	}
+
+	err = smallFile2.Reader.Close()
+	if err != nil {
+		t.Fatalf("got error while closing smallFile2: %v", err)
+	}
+
+	if int(largeFile1.Reader.GetRateLimit()) != bandwidth {
+		t.Fatalf("largeFile1 appointed bandwidth different then file size bandwidth: %d expected: %d", largeFile1.Reader.GetRateLimit(), largeDataSize)
+	}
+}
+
 func readAllFiles(t *testing.T, files []*File, minTimeInSeconds, maxTimeInSeconds int) {
 	var wg sync.WaitGroup
 	start := time.Now()
