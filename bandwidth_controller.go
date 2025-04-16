@@ -21,8 +21,12 @@ func NewBandwidthController(bandwidth int64) *BandwidthController {
 }
 
 func (bc *BandwidthController) AppendFileReader(r io.Reader, fileSize int64) *File {
+	return bc.AppendFileReadCloser(io.NopCloser(r), fileSize)
+}
+
+func (bc *BandwidthController) AppendFileReadCloser(r io.ReadCloser, fileSize int64) *File {
 	fileID := uuid.New()
-	fileReader := NewFileReader(r, bc.bandwidth, func() {
+	fileReader := NewFileReadCloser(r, bc.bandwidth, func() {
 		bc.removeFile(fileID)
 	})
 

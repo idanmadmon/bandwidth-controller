@@ -21,6 +21,13 @@ func NewFileReader(r io.Reader, limit int64, callback func()) *FileReader {
 	}
 }
 
+func NewFileReadCloser(r io.ReadCloser, limit int64, callback func()) *FileReader {
+	return &FileReader{
+		reader:   ratelimitedreader.NewRateLimitedReadCloser(r, limit),
+		callback: callback,
+	}
+}
+
 func (fr *FileReader) Read(p []byte) (n int, err error) {
 	n, err = fr.reader.Read(p)
 	atomic.AddInt64(&fr.bytesRead, int64(n))
@@ -28,11 +35,13 @@ func (fr *FileReader) Read(p []byte) (n int, err error) {
 }
 
 func (fr *FileReader) Close() error {
+	err := fr.reader.Close()
+
 	if fr.callback != nil {
 		fr.callback()
 	}
 
-	return nil
+	return err
 }
 
 func (fr *FileReader) UpdateRateLimit(newLimit int64) {
