@@ -4,3 +4,5 @@ github.com/idanmadmon/rate-limited-reader v0.0.0-20241215210602-8eb05b441409 h1:
 github.com/idanmadmon/rate-limited-reader v0.0.0-20241215210602-8eb05b441409/go.mod h1:w4IYscN7SvQhQkvtnrNWbvfyOCjkU06ETEDxY9/fSaw=
 github.com/idanmadmon/rate-limited-reader v1.4.0 h1:/Opc+dvqxDRfQ4RGE2BCxsPiS/BcsL8DdcEzSkxp+Uo=
 github.com/idanmadmon/rate-limited-reader v1.4.0/go.mod h1:w4IYscN7SvQhQkvtnrNWbvfyOCjkU06ETEDxY9/fSaw=
+github.com/idanmadmon/rate-limited-reader v1.4.1 h1:rIukS89MshQ9VmmMf6tpUenPLmfQKeE9r94H1toICt8=
+github.com/idanmadmon/rate-limited-reader v1.4.1/go.mod h1:w4IYscN7SvQhQkvtnrNWbvfyOCjkU06ETEDxY9/fSaw=
